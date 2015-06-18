@@ -47,13 +47,9 @@ metalsmith.use(sass({
 
 ## Options
 
-Under the hood, this plugin is using [node-sass](https://github.com/andrew/node-sass), and there are
-few options you can pass through to it:
+See [node-sass](https://github.com/andrew/node-sass) for a complete list of supported options.
 
-
-### outputStyle
-
-Compression-level of the output CSS. Can be `'nested', 'expanded', 'compact', 'compressed'`.
+In addition to the options that node-sass provides, metalsmith-sass provides the following options:
 
 ### outputDir
 
@@ -75,15 +71,52 @@ Metalsmith()
   });
 ```
 
-### includePaths
+As of version [v1.1](https://github.com/stevenschobert/metalsmith-sass/releases/v1.1.0), you can also use a function to dynamically manipulate the output dir.
 
-Array of path names of directories to look for `@import` statements. By default, this plugin should locate
-all imports own its own, but if you are getting `not found` errors, try manually adding some paths.
+This is useful if you want to preserve your folder structure, but change just one folder name.
 
-### imagePath
+```js
+Metalsmith()
+  .source("src/")
+  .destination("build/")
+  .use(sass({
+    outputDir: function(originalPath) { 
+      // this will change scss/some/path to css/some/path
+      return originalPath.replace("scss", "css");
+    }
+  }))
+  .build(function () {
+    done();
+  });
+```
 
-Base path to use when evaluating `image-url()` functions in a stylesheet. Path will be prefixed to
-the value.
+## Source Maps
+
+The easiest way to enable source maps in your metalsmith project is to add the following options:
+
+```js
+Metalsmith()
+  .source("src/")
+  .destination("build/")
+  .use(sass({
+    sourceMap: true,
+    sourceMapContents: true   // This will embed all the Sass contents in your source maps.
+  }))
+  .build(function () {
+    done();
+  });
+```
+
+Though the `sourceMapContents` is not required, I recommend adding it, otherwise you'll need to
+manually serve up your `.scss` files along with your compiled `.css` files when you publish your
+site.
+
+## .sass files
+
+As of version [v1.2](https://github.com/stevenschobert/metalsmith-sass/releases/v1.2.0),
+metalsmith-sass automatically handles `.sass` files, so you don't need to specify the `indentedSyntax`
+option. Though you might still need set options for `indentType` and `indentWidth` if you are
+using something other than 2 spaces for indentation.
 
 ## Credits
 

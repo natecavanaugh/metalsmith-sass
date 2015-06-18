@@ -7,6 +7,7 @@
       join = require('path').join,
       metalsmith = require('metalsmith'),
       rm = require('rimraf'),
+      types = require('node-sass').types,
       sass = require('..'),
       equal = require('assert-dir-equal');
 
@@ -19,13 +20,19 @@
         join(__dirname, 'fixtures/dotfiles/build'),
         join(__dirname, 'fixtures/imports/build'),
         join(__dirname, 'fixtures/front-matter/build'),
-        join(__dirname, 'fixtures/invalid/build')
+        join(__dirname, 'fixtures/invalid/build'),
+        join(__dirname, 'fixtures/maps/build'),
+        join(__dirname, 'fixtures/sass-type/build')
       ];
       each(dirsToClean, rm, done);
     });
 
+    it('should expose node-sass types', function() {
+      assert.equal(sass.types, types);
+    });
+
     describe('core', function () {
-      it('should compile sass files', function (done) {
+      it('should compile .scss files', function (done) {
         metalsmith(__dirname)
           .source('fixtures/basic/src')
           .destination('fixtures/basic/build')
@@ -35,6 +42,20 @@
           .build(function (err) {
             assert.equal(err, null, "There shouldn't be any error.");
             equal(join(__dirname, 'fixtures/basic/build'), join(__dirname, 'fixtures/basic/expected'));
+            done();
+          });
+      });
+
+      it('should compile .sass files', function (done) {
+        metalsmith(__dirname)
+          .source('fixtures/sass-type/src')
+          .destination('fixtures/sass-type/build')
+          .use(sass({
+            outputStyle: 'expanded'
+          }))
+          .build(function (err) {
+            assert.equal(err, null, "There shouldn't be any error.");
+            equal(join(__dirname, 'fixtures/sass-type/build'), join(__dirname, 'fixtures/sass-type/expected'));
             done();
           });
       });
@@ -67,6 +88,23 @@
               throw err;
             }
             equal(join(__dirname, 'fixtures/imports/build'), join(__dirname, 'fixtures/imports/expected'));
+            done();
+          });
+      });
+
+      it('should compile source maps if enabled', function (done) {
+        metalsmith(__dirname)
+          .source('fixtures/maps/src')
+          .destination('fixtures/maps/build')
+          .use(sass({
+            sourceMap: true,
+            sourceMapContents: true
+          }))
+          .build(function (err) {
+            if (err) {
+              throw err;
+            }
+            equal(join(__dirname, 'fixtures/maps/build'), join(__dirname, 'fixtures/maps/expected'));
             done();
           });
       });
@@ -118,6 +156,27 @@
             done();
           });
       });
+
+      it('should accept custom functions', function(done) {
+        metalsmith(__dirname)
+          .source('fixtures/functions/src')
+          .destination('fixtures/functions/build')
+          .use(sass({
+            outputStyle: 'expanded',
+            functions: {
+              'test($arg)': function(arg) {
+                return new types.String('#' + arg.getValue() + '123');
+              }
+            }
+          }))
+          .build(function (err) {
+            if (err) {
+              throw err;
+            }
+            equal(join(__dirname, 'fixtures/functions/build'), join(__dirname, 'fixtures/functions/expected'));
+            done();
+          });
+      });
     });
 
     describe('the outputDir option', function () {
@@ -127,7 +186,9 @@
           .destination('fixtures/outputDir/build')
           .use(sass({
             outputStyle: 'expanded',
-            outputDir: 'nested/'
+            outputDir: function(original) {
+              return original.replace("scss", "nested");
+            }
           }))
           .build(function (err) {
             if (err) {
